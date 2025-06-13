@@ -4,14 +4,14 @@ import os
 from dotenv import load_dotenv
 from logic.yt_pdf import extract_text_from_pdf, get_youtube_transcript
 
-# Load env
+# Load environment variables
 load_dotenv()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 st.set_page_config(page_title="Groq Chatbot Plus", layout="wide")
 st.title("💬 Enhanced Groq Chatbot")
 
-# Sidebar
+# Sidebar Configuration
 st.sidebar.header("🛠️ Model Configuration")
 model = st.sidebar.selectbox("Select Model", ["llama3-8b-8192", "gemma2-9b-it"])
 temperature = st.sidebar.slider("Temperature", 0.0, 1.0, 0.7, 0.05)
@@ -30,7 +30,10 @@ st.sidebar.caption(
 # Call Groq API
 def ask_groq(prompt, model, temperature, max_tokens):
     url = "https://api.groq.com/openai/v1/chat/completions"
-    headers = {"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type": "application/json"
+    }
     payload = {
         "model": model,
         "messages": [
@@ -57,7 +60,7 @@ with tab1:
             answer = ask_groq(user_input, model, temperature, max_tokens)
             st.markdown(f"**🤖 Answer:** {answer}")
 
-# 2. Document Summary Tab
+# 2. PDF Summary Tab
 with tab2:
     st.subheader("Upload and Summarize PDF")
     uploaded_file = st.file_uploader("Upload PDF", type=["pdf"])
