@@ -3,3 +3,4 @@ requests
 python-dotenv
 PyMuPDF
 youtube_transcript_api
+PyMuPDF
