@@ -5,9 +5,6 @@ import tempfile
 from PIL import Image
 import fitz  # PyMuPDF
 import streamlit as st
-import asyncio
-import nest_asyncio
-nest_asyncio.apply()
 from dotenv import load_dotenv
 from transformers import BlipProcessor, BlipForConditionalGeneration
 from langchain_groq import ChatGroq
