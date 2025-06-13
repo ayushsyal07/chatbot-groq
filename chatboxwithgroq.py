@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 import os
 from dotenv import load_dotenv
-from summary-logic.yt-pdf import extract_text_from_pdf, get_youtube_transcript
+from summary-logic.yt_pdf import extract_text_from_pdf, get_youtube_transcript
 
 # Load env
 load_dotenv()
