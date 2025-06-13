@@ -1,6 +1,6 @@
 streamlit
 requests
 python-dotenv
-PyMuPDF
+pytube
 youtube_transcript_api
 PyMuPDF
