@@ -1,87 +1,80 @@
-import streamlit as st
-import requests
+from pytube import YouTube
+import re
+import fitz  # PyMuPDF for PDF extraction
+import whisper  # OpenAI Whisper ASR
+import tempfile
 import os
-from dotenv import load_dotenv
-from logic.yt_pdf import extract_text_from_pdf
-from logic.yt_pdf import get_youtube_captions
 
-# Load environment variables
-load_dotenv()
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+# PDF extraction logic
+def extract_text_from_pdf(file):
+    doc = fitz.open(stream=file.read(), filetype="pdf")
+    text = ""
+    for page in doc:
+        text += page.get_text()
+    return text
 
-st.set_page_config(page_title="Groq Chatbot Plus", layout="wide")
-st.title("💬 Enhanced Groq Chatbot")
+# YouTube video ID extractor
+def extract_video_id(url):
+    patterns = [r"v=([a-zA-Z0-9_-]{11})", r"youtu\.be/([a-zA-Z0-9_-]{11})"]
+    for p in patterns:
+        match = re.search(p, url)
+        if match:
+            return match.group(1)
+    return None
 
-# Sidebar Configuration
-st.sidebar.header("🛠️ Model Configuration")
-model = st.sidebar.selectbox("Select Model", ["llama3-8b-8192", "gemma2-9b-it"])
-temperature = st.sidebar.slider("Temperature", 0.0, 1.0, 0.7, 0.05)
-st.sidebar.caption(
-    "🔹 **Temperature** controls the creativity of the response:\n"
-    "- Low (e.g., 0.2) → focused and factual\n"
-    "- High (e.g., 0.8) → more random and creative"
-)
-max_tokens = st.sidebar.slider("Max Tokens", 50, 1024, 300, 50)
-st.sidebar.caption(
-    "🔸 **Max Tokens** limits the response length:\n"
-    "- Lower = short answers\n"
-    "- Higher = detailed responses"
-)
+# Extract captions with fallback to Whisper
 
-# Call Groq API
-def ask_groq(prompt, model, temperature, max_tokens):
-    url = "https://api.groq.com/openai/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {GROQ_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "model": model,
-        "messages": [
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": prompt}
-        ],
-        "temperature": temperature,
-        "max_tokens": max_tokens
-    }
-    res = requests.post(url, headers=headers, json=payload)
-    if res.status_code == 200:
-        return res.json()["choices"][0]["message"]["content"]
-    return f"❌ Error: {res.status_code} - {res.text}"
+def get_youtube_captions(video_url, preferred_lang='en'):
+    try:
+        yt = YouTube(video_url)
+        captions = yt.captions
 
-# Tab Layout
-tab1, tab2, tab3 = st.tabs(["🧠 Ask Chatbot", "📄 Summarize Document", "📺 Summarize YouTube"])
+        if captions:
+            caption = captions.get_by_language_code(preferred_lang)
+            if not caption and captions.all():
+                caption = next(iter(captions.all()))
 
-# 1. Chat Tab
-with tab1:
-    st.subheader("Ask Anything")
-    user_input = st.text_input("You:")
-    if user_input:
-        with st.spinner("Thinking..."):
-            answer = ask_groq(user_input, model, temperature, max_tokens)
-            st.markdown(f"**🤖 Answer:** {answer}")
+            if caption:
+                srt_captions = caption.generate_srt_captions()
+                lines = srt_captions.split('\n')
+                clean_lines = [
+                    line.strip() for line in lines
+                    if line.strip() and not line.strip().isdigit() and '-->' not in line
+                ]
+                return " ".join(clean_lines)
 
-# 2. PDF Summary Tab
-with tab2:
-    st.subheader("Upload and Summarize PDF")
-    uploaded_file = st.file_uploader("Upload PDF", type=["pdf"])
-    if uploaded_file:
-        with st.spinner("Reading file..."):
-            text = extract_text_from_pdf(uploaded_file)
-            summary = ask_groq(f"Summarize this document:\n{text[:4000]}", model, temperature, max_tokens)
-            st.markdown("**📄 Summary:**")
-            st.write(summary)
+        # If no captions, fallback to Whisper
+        return transcribe_with_whisper(yt)
 
-# 3. YouTube Summary Tab
-with tab3:
-    st.subheader("Paste YouTube URL")
-    yt_url = st.text_input("YouTube Link:")
-    if yt_url:
-        with st.spinner("Fetching captions..."):
-            captions = get_youtube_captions(yt_url)
-            if "❌" not in captions:
-                summary = ask_groq(f"Summarize this YouTube caption text:\n{captions[:4000]}", model, temperature, max_tokens)
-                st.markdown("**📺 Summary:**")
-                st.write(summary)
-            else:
-                st.error(captions)
+    except Exception as e:
+        return f"❌ Error fetching captions: {str(e)}"
+
+# Whisper ASR transcription
+
+def transcribe_with_whisper(yt):
+    try:
+        audio_stream = yt.streams.filter(only_audio=True).first()
+        if not audio_stream:
+            return "❌ No audio stream available for transcription."
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp_file:
+            audio_path = tmp_file.name
+            audio_stream.download(filename=audio_path)
+
+        model = whisper.load_model("base")
+        result = model.transcribe(audio_path)
+        os.remove(audio_path)
+
+        return result["text"]
+
+    except Exception as e:
+        return f"❌ Whisper transcription failed: {str(e)}"
+
+# List available caption languages
+
+def get_available_caption_languages(video_url):
+    try:
+        yt = YouTube(video_url)
+        return [c.code for c in yt.captions.all()]
+    except Exception as e:
+        return []
