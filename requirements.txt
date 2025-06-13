@@ -1,8 +1,9 @@
 streamlit
-requests
-python-dotenv
 pytube
-youtube_transcript_api
 PyMuPDF
-git+https://github.com/openai/whisper.git
-torch==2.0.1 # or platform-specific install command
+transformers
+torch
+Pillow
+langchain
+python-dotenv
+groq
