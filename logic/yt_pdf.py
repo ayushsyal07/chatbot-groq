@@ -1,8 +1,7 @@
-from pytube import YouTube
-import re
+from PIL import Image
 import fitz  # PyMuPDF for PDF extraction
-import tempfile
-import os
+from transformers import BlipProcessor, BlipForConditionalGeneration
+import torch
 
 # PDF extraction logic
 def extract_text_from_pdf(file):
@@ -12,67 +11,19 @@ def extract_text_from_pdf(file):
         text += page.get_text()
     return text
 
-# YouTube video ID extractor
-def extract_video_id(url):
-    patterns = [r"v=([a-zA-Z0-9_-]{11})", r"youtu\.be/([a-zA-Z0-9_-]{11})"]
-    for p in patterns:
-        match = re.search(p, url)
-        if match:
-            return match.group(1)
-    return None
-
-# Extract captions with fallback to Whisper
-def get_youtube_captions(video_url, preferred_lang='en'):
+# Image captioning logic using BLIP
+def describe_image(image):
     try:
-        yt = YouTube(video_url)
-        captions = yt.captions
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
+        model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base").to(device)
 
-        if captions:
-            caption = captions.get_by_language_code(preferred_lang)
-            if not caption and captions.all():
-                caption = next(iter(captions.all()))
+        img = Image.open(image).convert("RGB")
+        inputs = processor(images=img, return_tensors="pt").to(device)
 
-            if caption:
-                srt_captions = caption.generate_srt_captions()
-                lines = srt_captions.split('\n')
-                clean_lines = [
-                    line.strip() for line in lines
-                    if line.strip() and not line.strip().isdigit() and '-->' not in line
-                ]
-                return " ".join(clean_lines)
-
-        # If no captions, fallback to Whisper
-        return transcribe_with_whisper(yt)
+        out = model.generate(**inputs, max_new_tokens=20)
+        caption = processor.decode(out[0], skip_special_tokens=True)
+        return caption
 
     except Exception as e:
-        return f"❌ Error fetching captions: {str(e)}"
-
-# Whisper ASR transcription
-def transcribe_with_whisper(yt):
-    try:
-        import whisper  # 👈 Lazy import here
-
-        audio_stream = yt.streams.filter(only_audio=True).first()
-        if not audio_stream:
-            return "❌ No audio stream available for transcription."
-
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp_file:
-            audio_path = tmp_file.name
-            audio_stream.download(filename=audio_path)
-
-        model = whisper.load_model("base")
-        result = model.transcribe(audio_path)
-        os.remove(audio_path)
-
-        return result["text"]
-
-    except Exception as e:
-        return f"❌ Whisper transcription failed: {str(e)}"
-
-# List available caption languages
-def get_available_caption_languages(video_url):
-    try:
-        yt = YouTube(video_url)
-        return [c.code for c in yt.captions.all()]
-    except Exception as e:
-        return []
+        return f"⚠️ Error describing image: {e}"
