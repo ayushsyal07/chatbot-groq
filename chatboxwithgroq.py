@@ -57,23 +57,24 @@ def main():
     st.set_page_config(page_title="AI Assistant: Chat + PDF + Image", layout="wide")
     st.title("🤖 AI Assistant: Chatbot | PDF Summarizer | Image Identifier")
 
+    # Sidebar controls
+    st.sidebar.title("⚙️ Chat Settings")
+    temperature = st.sidebar.slider("Temperature (Creativity)", 0.0, 1.0, 0.7, step=0.1)
+    max_tokens = st.sidebar.slider("Max Tokens (Response Length)", 64, 2048, 512, step=64)
+
+    st.sidebar.markdown("""
+    **What These Do:**
+    - 🔥 **Temperature** controls randomness in replies.  
+      - Low = factual  
+      - High = creative  
+    - ✏️ **Max Tokens** controls how long the model's response can be.
+    """)
+
     tabs = st.tabs(["💬 Chatbot", "📄 PDF Summary", "🖼️ Image Identifier"])
 
     # --- Tab 1: Chatbot ---
     with tabs[0]:
         st.subheader("Ask Anything!")
-
-        temperature = st.slider("Temperature (Creativity)", 0.0, 1.0, 0.7, step=0.1)
-        max_tokens = st.slider("Max Tokens (Response Length)", 64, 2048, 512, step=64)
-
-        st.markdown("""
-        🔹 **Temperature**: Controls creativity.  
-        - Low (0.1): More factual and deterministic  
-        - High (0.9): More creative and diverse  
-
-        🔹 **Max Tokens**: Limits the response length in words/tokens.
-        """)
-
         user_input = st.text_input("Type your message:")
         if user_input:
             with st.spinner("Generating response..."):
@@ -101,6 +102,3 @@ def main():
             st.image(uploaded_image, caption="Uploaded Image", use_container_width=True)
             st.write("📝 Description:")
             st.success(caption)
-
-if __name__ == "__main__":
-    main()
