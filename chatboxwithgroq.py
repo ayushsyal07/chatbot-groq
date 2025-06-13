@@ -1,11 +1,20 @@
-from pytube import YouTube
-import re
-import fitz  # PyMuPDF for PDF extraction
-import whisper  # OpenAI Whisper ASR
-import tempfile
 import os
+import re
+import torch
+import tempfile
+from PIL import Image
+import fitz  # PyMuPDF
+import streamlit as st
+from dotenv import load_dotenv
+from transformers import BlipProcessor, BlipForConditionalGeneration
+from langchain_community.llms import Groq
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
 
-# PDF extraction logic
+load_dotenv()
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
+# --- PDF Extraction ---
 def extract_text_from_pdf(file):
     doc = fitz.open(stream=file.read(), filetype="pdf")
     text = ""
@@ -13,68 +22,70 @@ def extract_text_from_pdf(file):
         text += page.get_text()
     return text
 
-# YouTube video ID extractor
-def extract_video_id(url):
-    patterns = [r"v=([a-zA-Z0-9_-]{11})", r"youtu\.be/([a-zA-Z0-9_-]{11})"]
-    for p in patterns:
-        match = re.search(p, url)
-        if match:
-            return match.group(1)
-    return None
-
-# Extract captions with fallback to Whisper
-
-def get_youtube_captions(video_url, preferred_lang='en'):
+# --- Image Captioning ---
+def describe_image(image):
     try:
-        yt = YouTube(video_url)
-        captions = yt.captions
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
+        model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base").to(device)
 
-        if captions:
-            caption = captions.get_by_language_code(preferred_lang)
-            if not caption and captions.all():
-                caption = next(iter(captions.all()))
-
-            if caption:
-                srt_captions = caption.generate_srt_captions()
-                lines = srt_captions.split('\n')
-                clean_lines = [
-                    line.strip() for line in lines
-                    if line.strip() and not line.strip().isdigit() and '-->' not in line
-                ]
-                return " ".join(clean_lines)
-
-        # If no captions, fallback to Whisper
-        return transcribe_with_whisper(yt)
-
+        img = Image.open(image).convert("RGB")
+        inputs = processor(images=img, return_tensors="pt").to(device)
+        out = model.generate(**inputs, max_new_tokens=20)
+        caption = processor.decode(out[0], skip_special_tokens=True)
+        return caption
     except Exception as e:
-        return f"❌ Error fetching captions: {str(e)}"
+        return f"⚠️ Error describing image: {e}"
 
-# Whisper ASR transcription
+# --- Chatbot (Groq + Mixtral) ---
+def get_llm():
+    return Groq(model="mixtral-8x7b-32768", api_key=GROQ_API_KEY)
 
-def transcribe_with_whisper(yt):
-    try:
-        audio_stream = yt.streams.filter(only_audio=True).first()
-        if not audio_stream:
-            return "❌ No audio stream available for transcription."
+def run_chatbot(user_query):
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", "You are a helpful assistant."),
+        ("user", "{input}")
+    ])
+    chain = prompt | get_llm() | StrOutputParser()
+    return chain.invoke({"input": user_query})
 
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp_file:
-            audio_path = tmp_file.name
-            audio_stream.download(filename=audio_path)
+# --- Streamlit App ---
+def main():
+    st.set_page_config(page_title="AI Assistant: Chat + PDF + Image", layout="wide")
+    st.title("🤖 AI Assistant: Chatbot | PDF Summarizer | Image Identifier")
 
-        model = whisper.load_model("base")
-        result = model.transcribe(audio_path)
-        os.remove(audio_path)
+    tabs = st.tabs(["💬 Chatbot", "📄 PDF Summary", "🖼️ Image Identifier"])
 
-        return result["text"]
+    # --- Tab 1: Chatbot ---
+    with tabs[0]:
+        st.subheader("Ask Anything!")
+        user_input = st.text_input("Type your message:")
+        if user_input:
+            with st.spinner("Generating response..."):
+                response = run_chatbot(user_input)
+            st.write("🧠 Response:")
+            st.markdown(response)
 
-    except Exception as e:
-        return f"❌ Whisper transcription failed: {str(e)}"
+    # --- Tab 2: PDF Summarizer ---
+    with tabs[1]:
+        st.subheader("Upload a PDF")
+        pdf_file = st.file_uploader("Choose a PDF file", type="pdf")
+        if pdf_file is not None:
+            with st.spinner("Extracting text from PDF..."):
+                extracted_text = extract_text_from_pdf(pdf_file)
+            st.write("📜 Extracted Text:")
+            st.text_area("Content", extracted_text, height=300)
 
-# List available caption languages
+    # --- Tab 3: Image Caption Generator ---
+    with tabs[2]:
+        st.subheader("Upload an Image")
+        uploaded_image = st.file_uploader("Choose an image", type=["jpg", "jpeg", "png"])
+        if uploaded_image is not None:
+            with st.spinner("Describing image..."):
+                caption = describe_image(uploaded_image)
+            st.image(uploaded_image, caption="Uploaded Image", use_column_width=True)
+            st.write("📝 Description:")
+            st.success(caption)
 
-def get_available_caption_languages(video_url):
-    try:
-        yt = YouTube(video_url)
-        return [c.code for c in yt.captions.all()]
-    except Exception as e:
-        return []
+if __name__ == "__main__":
+    main()
