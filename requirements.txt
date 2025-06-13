@@ -4,3 +4,5 @@ python-dotenv
 pytube
 youtube_transcript_api
 PyMuPDF
+git+https://github.com/openai/whisper.git
+torch  # or platform-specific install command
