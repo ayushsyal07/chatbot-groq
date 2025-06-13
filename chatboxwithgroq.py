@@ -42,7 +42,7 @@ def describe_image(image):
 
 # --- Chatbot (Groq + Mixtral) ---
 def get_llm():
-    return ChatGroq(model="gemma:latest", api_key=GROQ_API_KEY)
+    return ChatGroq(model="llama3-70b-8192", api_key=GROQ_API_KEY)
 
 def run_chatbot(user_query):
     prompt = ChatPromptTemplate.from_messages([
