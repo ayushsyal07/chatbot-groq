@@ -16,7 +16,7 @@ st.sidebar.header("🛠️ Model Configuration")
 # Select model
 model = st.sidebar.selectbox(
     "Select Groq Model",
-    options=["llama3-8b-8192", "mixtral-8x7b-32768", "gemma-7b-it"],
+    options=["llama3-8b-8192", "mistral-saba-24b", "gemma2-9b-it"],
     index=0
 )
 
