@@ -1,8 +1,8 @@
 import fitz  # PyMuPDF
-from pytube import YouTube
 import re
+from pytube import YouTube
 
-# PDF Text Extraction
+# PDF extraction
 def extract_text_from_pdf(file):
     doc = fitz.open(stream=file.read(), filetype="pdf")
     text = ""
@@ -10,7 +10,7 @@ def extract_text_from_pdf(file):
         text += page.get_text()
     return text
 
-# YouTube ID Extractor
+# YouTube ID extractor
 def extract_video_id(url):
     patterns = [r"v=([a-zA-Z0-9_-]{11})", r"youtu\.be/([a-zA-Z0-9_-]{11})"]
     for p in patterns:
@@ -19,24 +19,21 @@ def extract_video_id(url):
             return match.group(1)
     return None
 
-# YouTube Transcript Extractor (from captions)
-def get_youtube_transcript(url):
+# Captions extraction from YouTube using pytube
+def get_youtube_captions(video_url):
     try:
-        yt = YouTube(url)
-        caption = yt.captions.get_by_language_code("en")
+        yt = YouTube(video_url)
+        caption = yt.captions.get_by_language_code("en")  # English
         if not caption:
-            return "❌ No English subtitles found."
-        srt = caption.generate_srt_captions()
-        return srt_to_text(srt)
+            return "❌ No English captions available for this video."
+        srt_captions = caption.generate_srt_captions()
+        # Remove timestamps and numbers from SRT
+        lines = srt_captions.split('\n')
+        text_lines = []
+        for line in lines:
+            if line.strip().isdigit() or '-->' in line:
+                continue
+            text_lines.append(line.strip())
+        return " ".join(text_lines)
     except Exception as e:
-        return f"❌ Could not retrieve captions: {str(e)}"
-
-# Clean up SRT format
-def srt_to_text(srt):
-    lines = srt.strip().split('\n')
-    text_lines = []
-    for line in lines:
-        if re.match(r'^\d+$', line): continue
-        if re.match(r'\d{2}:\d{2}:\d{2},\d{3}', line): continue
-        text_lines.append(line)
-    return ' '.join(text_lines)
+        return f"❌ Error fetching captions: {e}"
