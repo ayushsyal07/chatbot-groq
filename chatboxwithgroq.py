@@ -86,7 +86,7 @@ def main():
         if uploaded_image is not None:
             with st.spinner("Describing image..."):
                 caption = describe_image(uploaded_image)
-            st.image(uploaded_image, caption="Uploaded Image", use_column_width=True)
+            st.image(uploaded_image, caption="Uploaded Image", use_container_width=True)
             st.write("📝 Description:")
             st.success(caption)
 
