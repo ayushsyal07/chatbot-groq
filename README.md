@@ -1,29 +1,32 @@
-# 🤖 Streamlit Q&A Chatbot using Groq
+LINK
 
-This is a fast and lightweight chatbot built with **Streamlit** and **Groq's open-source LLMs** like LLaMA 3, Mixtral, and Gemma.
+https://chatbot-groq-3madnebku22qjvdtwxiyet.streamlit.app/
+
+
+# 🤖 AI Assistant Web App
+
+This is a **Streamlit-based AI Assistant** that combines three powerful features into one interface:
+
+1. 💬 **Chatbot** – Powered by Groq's LLaMA 3 model.
+2. 📄 **PDF Summarizer** – Extract and display content from uploaded PDF files.
+3. 🖼️ **Image Captioning** – Generate descriptions of uploaded images using BLIP.
 
 ---
 
 ## 🚀 Features
 
-- ✅ Choose between LLaMA 3, Mixtral, Gemma
-- ✅ Control temperature and max tokens
-- ✅ Hosted in the cloud (no local LLM needed)
-- ✅ Deployable to Streamlit Community Cloud
+### 💬 Chatbot
+- Uses `Groq API` with **LLaMA 3** for smart, contextual responses.
+- Adjustable parameters:
+  - 🔥 **Temperature** – Controls creativity of responses.
+  - 📏 **Max Tokens** – Controls length of the response.
+
+### 📄 PDF Summarizer
+- Upload any `.pdf` file.
+- Extracts and displays all readable text.
+
+### 🖼️ Image Captioning
+- Upload images (`.jpg`, `.jpeg`, `.png`).
+- Generates a description using **BLIP (Salesforce model)**.
 
 ---
-
-## 🧩 Tech Stack
-
-- Streamlit for UI
-- Groq API for LLM responses
-- `.env` for API keys
-
----
-
-## 📦 Setup Instructions
-
-1. **Clone the repo**
-```bash
-git clone https://github.com/your-username/groq-chatbot.git
-cd groq-chatbot
