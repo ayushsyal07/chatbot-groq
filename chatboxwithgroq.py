@@ -40,16 +40,16 @@ def describe_image(image):
     except Exception as e:
         return f"⚠️ Error describing image: {e}"
 
-# --- Chatbot (Groq + Mixtral) ---
-def get_llm():
-    return ChatGroq(model="llama3-70b-8192", api_key=GROQ_API_KEY)
+# --- Chatbot (Groq + Mixtral/LLaMA) ---
+def get_llm(temperature=0.7, max_tokens=512):
+    return ChatGroq(model="llama3-70b-8192", api_key=GROQ_API_KEY, temperature=temperature, max_tokens=max_tokens)
 
-def run_chatbot(user_query):
+def run_chatbot(user_query, temperature=0.7, max_tokens=512):
     prompt = ChatPromptTemplate.from_messages([
         ("system", "You are a helpful assistant."),
         ("user", "{input}")
     ])
-    chain = prompt | get_llm() | StrOutputParser()
+    chain = prompt | get_llm(temperature, max_tokens) | StrOutputParser()
     return chain.invoke({"input": user_query})
 
 # --- Streamlit App ---
@@ -62,10 +62,22 @@ def main():
     # --- Tab 1: Chatbot ---
     with tabs[0]:
         st.subheader("Ask Anything!")
+
+        temperature = st.slider("Temperature (Creativity)", 0.0, 1.0, 0.7, step=0.1)
+        max_tokens = st.slider("Max Tokens (Response Length)", 64, 2048, 512, step=64)
+
+        st.markdown("""
+        🔹 **Temperature**: Controls creativity.  
+        - Low (0.1): More factual and deterministic  
+        - High (0.9): More creative and diverse  
+
+        🔹 **Max Tokens**: Limits the response length in words/tokens.
+        """)
+
         user_input = st.text_input("Type your message:")
         if user_input:
             with st.spinner("Generating response..."):
-                response = run_chatbot(user_input)
+                response = run_chatbot(user_input, temperature, max_tokens)
             st.write("🧠 Response:")
             st.markdown(response)
 
