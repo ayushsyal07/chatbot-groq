@@ -15,7 +15,17 @@ st.title("💬 Enhanced Groq Chatbot")
 st.sidebar.header("🛠️ Model Configuration")
 model = st.sidebar.selectbox("Select Model", ["llama3-8b-8192", "gemma2-9b-it"])
 temperature = st.sidebar.slider("Temperature", 0.0, 1.0, 0.7, 0.05)
+st.sidebar.caption(
+    "🔹 **Temperature** controls the creativity of the response:\n"
+    "- Low (e.g., 0.2) → focused and factual\n"
+    "- High (e.g., 0.8) → more random and creative"
+)
 max_tokens = st.sidebar.slider("Max Tokens", 50, 1024, 300, 50)
+st.sidebar.caption(
+    "🔸 **Max Tokens** limits the response length:\n"
+    "- Lower = short answers\n"
+    "- Higher = detailed responses"
+)
 
 # Call Groq API
 def ask_groq(prompt, model, temperature, max_tokens):
