@@ -7,7 +7,7 @@ import fitz  # PyMuPDF
 import streamlit as st
 from dotenv import load_dotenv
 from transformers import BlipProcessor, BlipForConditionalGeneration
-from langchain_community.llms import Groq
+from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
@@ -39,7 +39,7 @@ def describe_image(image):
 
 # --- Chatbot (Groq + Mixtral) ---
 def get_llm():
-    return Groq(model="mixtral-8x7b-32768", api_key=GROQ_API_KEY)
+    return ChatGroq(model="mixtral-8x7b-32768", api_key=GROQ_API_KEY)
 
 def run_chatbot(user_query):
     prompt = ChatPromptTemplate.from_messages([
