@@ -5,4 +5,4 @@ pytube
 youtube_transcript_api
 PyMuPDF
 git+https://github.com/openai/whisper.git
-torch  # or platform-specific install command
+torch==2.0.1 # or platform-specific install command
