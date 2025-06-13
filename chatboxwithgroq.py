@@ -2,7 +2,8 @@ import streamlit as st
 import requests
 import os
 from dotenv import load_dotenv
-from logic.yt_pdf import extract_text_from_pdf, get_youtube_transcript
+from logic.yt_pdf import extract_text_from_pdf
+from logic.yt_pdf import get_youtube_captions
 
 # Load environment variables
 load_dotenv()
@@ -76,11 +77,11 @@ with tab3:
     st.subheader("Paste YouTube URL")
     yt_url = st.text_input("YouTube Link:")
     if yt_url:
-        with st.spinner("Fetching transcript..."):
-            transcript = get_youtube_transcript(yt_url)
-            if "❌" not in transcript:
-                summary = ask_groq(f"Summarize this YouTube transcript:\n{transcript[:4000]}", model, temperature, max_tokens)
+        with st.spinner("Fetching captions..."):
+            captions = get_youtube_captions(yt_url)
+            if "❌" not in captions:
+                summary = ask_groq(f"Summarize this YouTube caption text:\n{captions[:4000]}", model, temperature, max_tokens)
                 st.markdown("**📺 Summary:**")
                 st.write(summary)
             else:
-                st.error(transcript)
+                st.error(captions)
