@@ -1,10 +1,9 @@
 streamlit
-pytube
-PyMuPDF
-transformers
 torch
+transformers
 Pillow
+PyMuPDF
 langchain
-langchain_community
+langchain-groq
 python-dotenv
-groq
+nest_asyncio
