@@ -13,7 +13,7 @@ st.title("💬 Enhanced Groq Chatbot")
 
 # Sidebar
 st.sidebar.header("🛠️ Model Configuration")
-model = st.sidebar.selectbox("Select Model", ["llama3-8b-8192", "mistral-saba-24b", "gemma2-9b-it"])
+model = st.sidebar.selectbox("Select Model", ["llama3-8b-8192", "gemma2-9b-it"])
 temperature = st.sidebar.slider("Temperature", 0.0, 1.0, 0.7, 0.05)
 max_tokens = st.sidebar.slider("Max Tokens", 50, 1024, 300, 50)
 
